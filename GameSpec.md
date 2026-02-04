@@ -4,7 +4,7 @@
 **Tickle the Pickle**
 
 ## Game Type
-**Retro Arcade/ Dungeon Crawler**
+**Retro Arcade**
 
 ---
 
