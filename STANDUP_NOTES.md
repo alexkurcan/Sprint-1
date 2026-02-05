@@ -1,25 +1,25 @@
-## Day 21 (Monday)
-**Date:** ___________
+## Day 21 (Thursday)
+**Date:** _2/5/2026_
 
-### [Person 1 Name]
+### Alex
 - **What I did:** [Yesterday or since last standup]
 - **What I'm doing:** [Today's focus]
 - **Blocked?** [Yes/No — if yes, what?]
 
-### [Person 2 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Sham
+- **What I did:** Yesterday: Began brainstorming the game idea
+- **What I'm doing:** Today: worked on code, began designing the game
+- **Blocked?** No
 
-### [Person 3 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Elizabeth
+- **What I did:** 
+- **What I'm doing:** 
+- **Blocked?** 
 
-### [Person 4 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Melo
+- **What I did:** Yesterday: Began brainstorming the game idea
+- **What I'm doing:** Today: Began working on the code
+- **Blocked?** Yes: Getting LiveServer to work on LiveShare / Virtual Environments
 
 **Notes from Lead/Instructor:**  
 [Any decisions made, blockers to resolve after standup]
