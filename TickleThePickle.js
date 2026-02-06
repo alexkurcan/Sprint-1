@@ -8,8 +8,8 @@ let score = 0;
 let lives = 3;
 let gameOver = false;
 let fireCooldown = 0;
-let fireRate = 20; // lower = faster
-let damage = 1;
+let fireRate = 20;
+let wave = 1;
 
 // ======================
 // PLAYER
@@ -26,11 +26,15 @@ const player = {
 // INPUT
 // ======================
 const keys = {};
-document.addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true;
 
-  if (e.key.toLowerCase() === "q") {
-    gameOver = true;
+document.addEventListener("keydown", e => {
+  const key = e.key.toLowerCase();
+  keys[key] = true;
+
+  if (key === "q") gameOver = true;
+
+  if (key === "r" && gameOver) {
+    resetGame();
   }
 });
 
@@ -45,10 +49,9 @@ const bullets = [];
 const enemyBullets = [];
 
 // ======================
-// ENEMIES (PICKLES)
+// ENEMIES
 // ======================
 let enemies = [];
-let wave = 1;
 
 function spawnWave() {
   enemies = [];
@@ -62,9 +65,7 @@ function spawnWave() {
         y: 60 + r * 50,
         width: 30,
         height: 20,
-        dx: wave,
-        dy: 0,
-        hp: 1
+        dx: wave
       });
     }
   }
@@ -73,16 +74,17 @@ function spawnWave() {
 spawnWave();
 
 // ======================
-// GAME LOOP
+// UPDATE
 // ======================
 function update() {
   if (gameOver) return;
 
   // Player movement
   if (keys["a"] && player.x > 0) player.x -= player.speed;
-  if (keys["d"] && player.x < canvas.width - player.width) player.x += player.speed;
+  if (keys["d"] && player.x < canvas.width - player.width)
+    player.x += player.speed;
 
-  // Shooting (rate-limited)
+  // Shooting
   if (keys[" "] && fireCooldown <= 0) {
     bullets.push({
       x: player.x + player.width / 2 - 2,
@@ -101,13 +103,21 @@ function update() {
     score -= 100;
   }
 
-  // Update bullets
-  bullets.forEach(b => (b.y -= 10));
-  enemyBullets.forEach(b => (b.y += 6));
+  // Move bullets
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    bullets[i].y -= 10;
+    if (bullets[i].y < 0) bullets.splice(i, 1);
+  }
 
-  // Enemy movement & shooting
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    enemyBullets[i].y += 6;
+    if (enemyBullets[i].y > canvas.height) enemyBullets.splice(i, 1);
+  }
+
+  // Enemy movement + shooting
   enemies.forEach(e => {
     e.x += e.dx;
+
     if (Math.random() < 0.002 * wave) {
       enemyBullets.push({
         x: e.x + e.width / 2,
@@ -126,29 +136,30 @@ function update() {
     });
   }
 
-  // Collisions
-  bullets.forEach((b, bi) => {
-    enemies.forEach((e, ei) => {
-      if (hit(b, e)) {
-        bullets.splice(bi, 1);
-        enemies.splice(ei, 1);
+  // Bullet collision (safe reverse loops)
+  for (let b = bullets.length - 1; b >= 0; b--) {
+    for (let e = enemies.length - 1; e >= 0; e--) {
+      if (hit(bullets[b], enemies[e])) {
+        bullets.splice(b, 1);
+        enemies.splice(e, 1);
         score += 10;
+        break;
       }
-    });
-  });
+    }
+  }
 
-  enemyBullets.forEach((b, bi) => {
-    if (hit(b, player)) {
-      enemyBullets.splice(bi, 1);
+  // Enemy bullet collision
+  for (let i = enemyBullets.length - 1; i >= 0; i--) {
+    if (hit(enemyBullets[i], player)) {
+      enemyBullets.splice(i, 1);
       lives--;
       if (lives <= 0) gameOver = true;
     }
-  });
+  }
 
+  // Enemy hits player
   enemies.forEach(e => {
-    if (hit(e, player)) {
-      gameOver = true;
-    }
+    if (hit(e, player)) gameOver = true;
   });
 
   // Next wave
@@ -158,6 +169,9 @@ function update() {
   }
 }
 
+// ======================
+// COLLISION
+// ======================
 function hit(a, b) {
   return (
     a.x < b.x + b.width &&
@@ -172,6 +186,7 @@ function hit(a, b) {
 // ======================
 function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.textBaseline = "top";
 
   // Player
   ctx.fillStyle = "#00ff66";
@@ -188,16 +203,41 @@ function draw() {
   ctx.fillStyle = "#00aa00";
   enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height));
 
-  // UI
+  // UI (FIXED FONT)
   ctx.fillStyle = "#00ff66";
-  ctx.fillText(`Score: ${score}`, 10, 20);
-  ctx.fillText(`Lives: ${lives}`, 10, 40);
-  ctx.fillText(`Wave: ${wave}`, 10, 60);
+  ctx.font = "16px monospace";
 
+  ctx.fillText(`Score: ${score}`, 10, 10);
+  ctx.fillText(`Lives: ${lives}`, 10, 30);
+  ctx.fillText(`Wave: ${wave}`, 10, 50);
+
+  // Game Over Screen
   if (gameOver) {
+    ctx.textAlign = "center";
     ctx.font = "40px monospace";
-    ctx.fillText("GAME OVER", 180, 400);
+    ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 40);
+
+    ctx.font = "20px monospace";
+    ctx.fillText(`Final Score: ${score}`, canvas.width / 2, canvas.height / 2);
+    ctx.fillText("Press R to Restart", canvas.width / 2, canvas.height / 2 + 40);
+
+    ctx.textAlign = "start";
   }
+}
+
+// ======================
+// RESET
+// ======================
+function resetGame() {
+  score = 0;
+  lives = 3;
+  wave = 1;
+  fireRate = 20;
+  bullets.length = 0;
+  enemyBullets.length = 0;
+  gameOver = false;
+  player.x = canvas.width / 2 - 20;
+  spawnWave();
 }
 
 // ======================

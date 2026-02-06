@@ -1,16 +1,16 @@
 ## Blocker Log
 (copy paste this for each code block)
 **Date & Time:**  
-[When you hit this]
+02/06/2026 7:53AM
 
 **Blocker:**  
-[What went wrong?]
+The format for the final score is smushed together and itsn't formatted properly. There are just blocks instead of images.
 
 **Impact:**  
-[Did it stop the whole team or just one person?]
+Just overall makes the product look bad.
 
 **Resolution:**  
-[How did you fix it?]
+
 
 **Time to Resolve:**  
 [5 min / 15 min / 30+ min]

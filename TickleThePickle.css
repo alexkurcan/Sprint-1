@@ -3,10 +3,11 @@ body {
   color: #00ff66;
   font-family: monospace;
   text-align: center;
+  margin: 0;
 }
 
 h1 {
-  margin-bottom: 10px;
+  margin: 15px 0 10px 0;
 }
 
 canvas {
@@ -17,6 +18,7 @@ canvas {
 }
 
 .instructions {
-  margin-top: 10px;
+  margin-top: 12px;
   font-size: 14px;
+  line-height: 1.4;
 }
