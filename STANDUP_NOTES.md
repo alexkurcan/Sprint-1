@@ -26,29 +26,28 @@
 
 ---
 
-## Day 22 (Tuesday)
-**Date:** ___________
+## Day 22 (Friday)
+**Date:** _2/6/2026_
 
-### [Person 1 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Alex
+- **Previous Progress:** Completed visual design elements for the game
+- **Current Focus:** Finalizing project code implementation
+- **Blockers:** None
 
-### [Person 2 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Sham
+- **Previous Progress:** Completed visual design elements for the game
+- **Current Focus:** Finalizing project code implementation
+- **Blockers:** None
 
-### [Person 3 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Elizabeth
+- **Previous Progress:** Completed visual design elements for the game
+- **Current Focus:** Finalizing project code implementation
+- **Blockers:** None
 
-### [Person 4 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
-
+### Melo
+- **Previous Progress:** Completed visual design elements for the game
+- **Current Focus:** Finalizing project code implementation
+- **Blockers:** None
 **Notes from Lead/Instructor:**
 
 ---
