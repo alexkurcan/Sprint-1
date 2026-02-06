@@ -6,9 +6,27 @@ let gameStarted = false;
 let paused = false;
 
 // ======================
+// IMAGES
+// ======================
+const playerImg = new Image();
+playerImg.src = "https://png.pngtree.com/png-vector/20241016/ourlarge/pngtree-vampire-cartoon-png-image_14089958.png";
+
+const pickleImg = new Image();
+pickleImg.src = "https://www.clipartmax.com/png/middle/15-153390_image-result-for-pickle-clipart-food-prints-family-transparent-background-pickle-clipart.png";
+
+const strongPickleImg = new Image();
+strongPickleImg.src = "https://img.freepik.com/premium-psd/png-pickled-cucumber-transparent-background_53876-497988.jpg";
+
+const bossPickleImg = new Image();
+bossPickleImg.src = "https://png.pngtree.com/png-vector/20240528/ourmid/pngtree-cartoon-pickle-character-with-big-eyes-png-image_12526411.png";
+
+const explosionImg = new Image();
+explosionImg.src = "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5MsJ_CSDz6qeaC3vBwG8ETNKHBaMeefEO2g&s";
+
+// ======================
 // GAME STATE
 // ======================
-let score, lives, gameOver, fireCooldown, fireRate, wave;
+let score, lives, gameOver, fireCooldown, fireRate, wave, flashTimer;
 
 // ======================
 // PLAYER
@@ -50,6 +68,7 @@ document.addEventListener("keyup", e => {
 // ======================
 let bullets = [];
 let enemyBullets = [];
+let explosions = [];
 
 // ======================
 // ENEMIES
@@ -63,13 +82,18 @@ function spawnWave() {
 
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
+      let strong = Math.random() < 0.2;
+
       enemies.push({
         x: 80 + c * 70,
         y: 60 + r * 50,
-        width: 30,
-        height: 20,
-        dx: wave,
-        hp: 1
+        width: 40,
+        height: 30,
+        dx: 1 + wave * 0.3,
+        hp: strong ? 3 : 1,
+        img: strong ? strongPickleImg : pickleImg,
+        wobble: Math.random() * 10,
+        boss: false
       });
     }
   }
@@ -86,9 +110,11 @@ function resetGame() {
   wave = 1;
   gameOver = false;
   paused = false;
+  flashTimer = 0;
 
   bullets = [];
   enemyBullets = [];
+  explosions = [];
 
   player.x = canvas.width / 2 - player.width / 2;
   player.y = canvas.height - 60;
@@ -105,6 +131,18 @@ startScreen.addEventListener("click", () => {
   resetGame();
   loop();
 });
+
+// ======================
+// COLLISION
+// ======================
+function hit(a, b) {
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
+}
 
 // ======================
 // UPDATE
@@ -128,7 +166,7 @@ function update() {
   }
   fireCooldown--;
 
-  // Upgrade (re-implemented)
+  // Upgrade (fire rate)
   if (keys["p"] && score >= 100) {
     fireRate = Math.max(5, fireRate - 5);
     score -= 100;
@@ -138,8 +176,11 @@ function update() {
   bullets.forEach(b => (b.y -= 10));
   enemyBullets.forEach(b => (b.y += 6));
 
+  // Enemy movement
   enemies.forEach(e => {
     e.x += e.dx;
+    e.wobble += 0.1;
+
     if (Math.random() < 0.002 * wave) {
       enemyBullets.push({
         x: e.x + e.width / 2,
@@ -150,6 +191,7 @@ function update() {
     }
   });
 
+  // Bounce enemies
   if (enemies.some(e => e.x < 0 || e.x > canvas.width - e.width)) {
     enemies.forEach(e => {
       e.dx *= -1;
@@ -157,37 +199,45 @@ function update() {
     });
   }
 
+  // Bullet collisions
   bullets.forEach((b, bi) => {
     enemies.forEach((e, ei) => {
       if (hit(b, e)) {
         bullets.splice(bi, 1);
-        enemies.splice(ei, 1);
-        score += 10;
+        e.hp--;
+
+        if (e.hp <= 0) {
+          explosions.push({ x: e.x, y: e.y, timer: 20 });
+          enemies.splice(ei, 1);
+          score += e.boss ? 200 : 10;
+        }
       }
     });
   });
 
+  // Player hit
   enemyBullets.forEach((b, bi) => {
     if (hit(b, player)) {
       enemyBullets.splice(bi, 1);
       lives--;
+      flashTimer = 10;
       if (lives <= 0) gameOver = true;
     }
   });
 
+  // Explosion timer
+  explosions.forEach((ex, i) => {
+    ex.timer--;
+    if (ex.timer <= 0) explosions.splice(i, 1);
+  });
+
+  if (flashTimer > 0) flashTimer--;
+
+  // Next wave
   if (enemies.length === 0) {
     wave++;
     spawnWave();
   }
-}
-
-function hit(a, b) {
-  return (
-    a.x < b.x + b.width &&
-    a.x + a.width > b.x &&
-    a.y < b.y + b.height &&
-    a.y + a.height > b.y
-  );
 }
 
 // ======================
@@ -211,8 +261,10 @@ function draw() {
     return;
   }
 
-  // Player
-  ctx.fillRect(player.x, player.y, player.width, player.height);
+  // Player (flash when hit)
+  if (flashTimer % 2 === 0) {
+    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+  }
 
   // Bullets
   ctx.fillStyle = "yellow";
@@ -222,8 +274,15 @@ function draw() {
   enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
   // Enemies
-  ctx.fillStyle = "#00aa00";
-  enemies.forEach(e => ctx.fillRect(e.x, e.y, e.width, e.height));
+  enemies.forEach(e => {
+    let wobbleY = Math.sin(e.wobble) * 3;
+    ctx.drawImage(e.img, e.x, e.y + wobbleY, e.width, e.height);
+  });
+
+  // Explosions
+  explosions.forEach(ex => {
+    ctx.drawImage(explosionImg, ex.x, ex.y, 40, 40);
+  });
 
   if (gameOver) {
     ctx.font = "40px monospace";
