@@ -1,24 +1,69 @@
 body {
-  background: black;
+  background:
+    radial-gradient(1px 1px at 10% 20%, #ffffff, transparent),
+    radial-gradient(1px 1px at 30% 80%, #ffffff, transparent),
+    radial-gradient(1px 1px at 70% 40%, #ffffff, transparent),
+    radial-gradient(1px 1px at 90% 10%, #ffffff, transparent),
+    radial-gradient(1px 1px at 50% 90%, #ffffff, transparent),
+    radial-gradient(2px 2px at 25% 35%, #bbbbbb, transparent),
+    radial-gradient(2px 2px at 60% 15%, #bbbbbb, transparent),
+    radial-gradient(2px 2px at 85% 75%, #bbbbbb, transparent),
+    black;
+
+  background-repeat: repeat;
+  background-size:
+    200px 200px,
+    240px 240px,
+    300px 300px,
+    180px 180px,
+    260px 260px,
+    350px 350px,
+    400px 400px,
+    320px 320px,
+    auto;
+
   color: #00ff66;
   font-family: monospace;
   text-align: center;
-  margin: 0;
+  overflow: hidden;
 }
 
 h1 {
-  margin: 15px 0 10px 0;
+  margin: 8px 0;
+}
+
+.game-wrapper {
+  position: relative;
+  width: fit-content;
+  margin: 0 auto;
 }
 
 canvas {
   background: #111;
   border: 3px solid #00ff66;
   display: block;
-  margin: 0 auto;
+}
+
+/* ---------- START SCREEN ---------- */
+#startScreen {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.9);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+
+  cursor: pointer;
+}
+
+#startScreen h2 {
+  font-size: 32px;
+  margin-bottom: 15px;
 }
 
 .instructions {
-  margin-top: 12px;
   font-size: 14px;
-  line-height: 1.4;
+  line-height: 1.6;
 }
