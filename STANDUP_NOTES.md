@@ -57,22 +57,22 @@
 
 ### Alex
 - **What I did:**
-- **What I'm doing:**
+- **What I'm doing:** Adding bugs to the game
 - **Blocked?**
 
 ### Sham
 - **What I did:**
-- **What I'm doing:**
+- **What I'm doing:** Adding bugs to the game
 - **Blocked?**
 
 ### Elizabeth
 - **What I did:**
-- **What I'm doing:**
+- **What I'm doing:** 
 - **Blocked?**
 
 ### Melo
 - **What I did:** Friday: Finished a refined version of the code.
-- **What I'm doing:** Today: Committed the refined version from melo_branch to main branch
+- **What I'm doing:** Today: Committed the refined version from melo_branch to main branch, adding bugs to the game
 - **Blocked?**: Nah Twin im good
 
 **Notes from Lead/Instructor:**
