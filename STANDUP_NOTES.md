@@ -52,28 +52,28 @@
 
 ---
 
-## Day 23 (Wednesday)
-**Date:** ___________
+## Day 23 (Monday)
+**Date:** 2/9/2026
 
-### [Person 1 Name]
+### Alex
 - **What I did:**
 - **What I'm doing:**
 - **Blocked?**
 
-### [Person 2 Name]
+### Sham
 - **What I did:**
 - **What I'm doing:**
 - **Blocked?**
 
-### [Person 3 Name]
+### Elizabeth
 - **What I did:**
 - **What I'm doing:**
 - **Blocked?**
 
-### [Person 4 Name]
-- **What I did:**
-- **What I'm doing:**
-- **Blocked?**
+### Melo
+- **What I did:** Friday: Finished a refined version of the code.
+- **What I'm doing:** Today: Committed the refined version from melo_branch to main branch
+- **Blocked?**: Nah Twin im good
 
 **Notes from Lead/Instructor:**
 
