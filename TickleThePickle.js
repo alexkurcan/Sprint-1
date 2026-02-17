@@ -11,27 +11,149 @@ let gameStarted = false;
 let paused = false;
 
 // ======================
-// IMAGES
+// BACKGROUND REMOVAL UTILITY
 // ======================
-const playerImg = new Image();
-playerImg.src =
-  "https://png.pngtree.com/png-vector/20241016/ourlarge/pngtree-vampire-cartoon-png-image_14089958.png";
+/**
+ * Loads an image from a URL, removes its background (white/light or solid color),
+ * and returns a new Image with a transparent background.
+ * @param {string} src - URL of the image
+ * @param {object} options - Optional config: { tolerance: 0-255, targetColor: [r,g,b] }
+ * @returns {Promise<HTMLImageElement>}
+ */
+function loadImageNoBg(src, options = {}) {
+  const tolerance = options.tolerance ?? 40;
+  const targetColor = options.targetColor ?? null; // null = auto-detect from corners
 
-const pickleImg = new Image();
-pickleImg.src =
-  "https://www.clipartmax.com/png/middle/15-153390_image-result-for-pickle-clipart-food-prints-family-transparent-background-pickle-clipart.png";
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
 
-const strongPickleImg = new Image();
-strongPickleImg.src =
-  "https://img.freepik.com/premium-psd/png-pickled-cucumber-transparent-background_53876-497988.jpg";
+    img.onload = () => {
+      const offCanvas = document.createElement("canvas");
+      offCanvas.width = img.width;
+      offCanvas.height = img.height;
+      const offCtx = offCanvas.getContext("2d");
+      offCtx.drawImage(img, 0, 0);
 
-const bossPickleImg = new Image();
-bossPickleImg.src =
-  "https://png.pngtree.com/png-vector/20240528/ourmid/pngtree-cartoon-pickle-character-with-big-eyes-png-image_12526411.png";
+      const imageData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+      const data = imageData.data;
+      const w = offCanvas.width;
+      const h = offCanvas.height;
 
-const explosionImg = new Image();
-explosionImg.src =
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5MsJ_CSDz6qeaC3vBwG8ETNKHBaMeefEO2g&s";
+      // Auto-detect background color from the four corners
+      function getPixel(x, y) {
+        const idx = (y * w + x) * 4;
+        return [data[idx], data[idx + 1], data[idx + 2], data[idx + 3]];
+      }
+
+      let bgColor;
+      if (targetColor) {
+        bgColor = targetColor;
+      } else {
+        // Average the four corners to determine the background color
+        const corners = [
+          getPixel(0, 0),
+          getPixel(w - 1, 0),
+          getPixel(0, h - 1),
+          getPixel(w - 1, h - 1),
+        ];
+        bgColor = [
+          Math.round(corners.reduce((s, c) => s + c[0], 0) / 4),
+          Math.round(corners.reduce((s, c) => s + c[1], 0) / 4),
+          Math.round(corners.reduce((s, c) => s + c[2], 0) / 4),
+        ];
+      }
+
+      // Flood-fill approach: remove pixels that are "close" to the background color
+      function colorDistance(r1, g1, b1, r2, g2, b2) {
+        return Math.sqrt(
+          (r1 - r2) ** 2 + (g1 - g2) ** 2 + (b1 - b2) ** 2
+        );
+      }
+
+      // Use flood fill from all edges to only remove connected background pixels
+      const visited = new Uint8Array(w * h);
+      const queue = [];
+
+      function enqueue(x, y) {
+        const idx = y * w + x;
+        if (x < 0 || x >= w || y < 0 || y >= h || visited[idx]) return;
+        const pIdx = idx * 4;
+        const [r, g, b, a] = [data[pIdx], data[pIdx+1], data[pIdx+2], data[pIdx+3]];
+        if (a < 10) { // already transparent
+          visited[idx] = 1;
+          return;
+        }
+        if (colorDistance(r, g, b, bgColor[0], bgColor[1], bgColor[2]) <= tolerance) {
+          visited[idx] = 1;
+          queue.push([x, y]);
+        }
+      }
+
+      // Seed from all border pixels
+      for (let x = 0; x < w; x++) { enqueue(x, 0); enqueue(x, h - 1); }
+      for (let y = 0; y < h; y++) { enqueue(0, y); enqueue(w - 1, y); }
+
+      // BFS flood fill
+      while (queue.length > 0) {
+        const [x, y] = queue.pop();
+        const pIdx = (y * w + x) * 4;
+        data[pIdx + 3] = 0; // make transparent
+        enqueue(x + 1, y);
+        enqueue(x - 1, y);
+        enqueue(x, y + 1);
+        enqueue(x, y - 1);
+      }
+
+      offCtx.putImageData(imageData, 0, 0);
+
+      const result = new Image();
+      result.onload = () => resolve(result);
+      result.src = offCanvas.toDataURL();
+    };
+
+    img.onerror = () => {
+      // Fall back to original image if load fails
+      const fallback = new Image();
+      fallback.src = src;
+      resolve(fallback);
+    };
+
+    img.src = src;
+  });
+}
+
+// ======================
+// IMAGES (loaded with background removal)
+// ======================
+let playerImg, pickleImg, strongPickleImg, bossPickleImg, explosionImg;
+let imagesReady = false;
+
+async function loadImages() {
+  [playerImg, pickleImg, strongPickleImg, bossPickleImg, explosionImg] = await Promise.all([
+    loadImageNoBg(
+      "https://png.pngtree.com/png-vector/20241016/ourlarge/pngtree-vampire-cartoon-png-image_14089958.png",
+      { tolerance: 50 }
+    ),
+    loadImageNoBg(
+      "https://www.clipartmax.com/png/middle/15-153390_image-result-for-pickle-clipart-food-prints-family-transparent-background-pickle-clipart.png",
+      { tolerance: 50 }
+    ),
+    loadImageNoBg(
+      "https://img.freepik.com/premium-psd/png-pickled-cucumber-transparent-background_53876-497988.jpg",
+      { tolerance: 50 }
+    ),
+    loadImageNoBg(
+      "https://png.pngtree.com/png-vector/20240528/ourmid/pngtree-cartoon-pickle-character-with-big-eyes-png-image_12526411.png",
+      { tolerance: 50 }
+    ),
+    loadImageNoBg(
+      "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5MsJ_CSDz6qeaC3vBwG8ETNKHBaMeefEO2g&s",
+      { tolerance: 60 }
+    ),
+  ]);
+  imagesReady = true;
+}
 
 // ======================
 // GAME STATE
@@ -160,9 +282,20 @@ function resetGame() {
 // ======================
 // START GAME
 // ======================
-startScreen.addEventListener("click", () => {
+startScreen.addEventListener("click", async () => {
   if (gameStarted) return;
   gameStarted = true;
+
+  // Show a loading indicator while images process
+  ctx.fillStyle = "#000";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = "#00ff66";
+  ctx.font = "20px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("Loading...", canvas.width / 2, canvas.height / 2);
+  ctx.textAlign = "left";
+
+  await loadImages();
   resetGame();
   loop();
 });
@@ -365,4 +498,3 @@ function loop() {
   draw();
   requestAnimationFrame(loop);
 }
-
