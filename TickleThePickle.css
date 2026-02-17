@@ -186,14 +186,14 @@ canvas {
   50%       { opacity: 0; }
 }
 
-/* ---------- QUIT POPUP ---------- */
-#quitPopup {
+/* ---------- MENU POPUP ---------- */
+#menuPopup {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   background: rgba(0, 0, 0, 0.95);
-  border: 2px solid #ff4444;
+  border: 2px solid #00ff66;
   padding: 24px 36px;
   text-align: center;
   display: none;
@@ -201,22 +201,22 @@ canvas {
   align-items: center;
   gap: 16px;
   z-index: 10;
-  box-shadow: 0 0 24px rgba(255, 60, 60, 0.4);
+  box-shadow: 0 0 24px rgba(0, 255, 102, 0.4);
 }
 
-#quitPopup p {
+#menuPopup p {
   font-size: 20px;
-  color: #ff4444;
+  color: #00ff66;
   margin: 0;
   letter-spacing: 1px;
 }
 
-.quit-buttons {
+.menu-buttons {
   display: flex;
   gap: 16px;
 }
 
-.quit-buttons button {
+.menu-buttons button {
   background: transparent;
   border: 2px solid #00ff66;
   color: #00ff66;
@@ -228,17 +228,17 @@ canvas {
   transition: background 0.15s, color 0.15s;
 }
 
-.quit-buttons button:hover {
+.menu-buttons button:hover {
   background: #00ff66;
   color: #000;
 }
 
-#quitNo {
+#menuNo {
   border-color: #ff4444;
   color: #ff4444;
 }
 
-#quitNo:hover {
+#menuNo:hover {
   background: #ff4444;
   color: #000;
 }
