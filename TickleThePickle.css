@@ -67,3 +67,121 @@ canvas {
   font-size: 14px;
   line-height: 1.6;
 }
+
+/* ---------- END SCREEN ---------- */
+#endScreen {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+}
+
+#endScreen h2 {
+  font-size: 40px;
+  color: #ff3333;
+  text-shadow: 0 0 20px #ff0000;
+  margin-bottom: 10px;
+}
+
+#endScore {
+  font-size: 22px;
+  color: #00ff66;
+}
+
+#endScreen p {
+  font-size: 14px;
+  color: #aaaaaa;
+  margin-top: 10px;
+}
+
+/* ---------- VICTORY SCREEN ---------- */
+#victoryScreen {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.95);
+
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.victory-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: victoryFadeIn 0.6s ease forwards;
+}
+
+@keyframes victoryFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.trophy {
+  font-size: 80px;
+  animation: trophyBounce 1s ease infinite alternate;
+}
+
+@keyframes trophyBounce {
+  from { transform: translateY(0) rotate(-5deg); }
+  to   { transform: translateY(-12px) rotate(5deg); }
+}
+
+#victoryScreen h2 {
+  font-size: 52px;
+  color: #ffd700;
+  text-shadow:
+    0 0 20px #ffd700,
+    0 0 40px #ff8800,
+    0 0 60px #ff4400;
+  margin: 0;
+  letter-spacing: 4px;
+  animation: victoryGlow 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes victoryGlow {
+  from { text-shadow: 0 0 20px #ffd700, 0 0 40px #ff8800; }
+  to   { text-shadow: 0 0 30px #ffd700, 0 0 60px #ff8800, 0 0 80px #ffcc00; }
+}
+
+.victory-subtitle {
+  font-size: 16px;
+  color: #00ff66;
+  margin: 0;
+  letter-spacing: 1px;
+}
+
+#victoryScore {
+  font-size: 26px;
+  color: #ffd700;
+  background: rgba(255, 215, 0, 0.1);
+  border: 2px solid #ffd700;
+  padding: 10px 30px;
+  border-radius: 4px;
+  margin-top: 6px;
+}
+
+.restart-hint {
+  font-size: 14px;
+  color: #888;
+  margin-top: 8px;
+  animation: blinkHint 1.2s step-start infinite;
+}
+
+@keyframes blinkHint {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
