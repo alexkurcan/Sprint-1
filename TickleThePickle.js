@@ -41,6 +41,7 @@ explosionImg.src =
 let score, lives, gameOver, fireCooldown, fireRate, wave, flashTimer;
 let bossActive = false;
 let bossDefeated = false;
+let upgradedThisWave = false;
 
 // ======================
 // PLAYER
@@ -158,6 +159,7 @@ function resetGame() {
   flashTimer = 0;
   bossActive = false;
   bossDefeated = false;
+  upgradedThisWave = false;
 
   bullets = [];
   enemyBullets = [];
@@ -219,14 +221,19 @@ function update() {
   fireCooldown--;
 
   // Upgrade
-  if (keys["p"] && score >= 100) {
+  if (keys["p"] && score >= 150 && !upgradedThisWave) {
     fireRate = Math.max(5, fireRate - 5);
-    score -= 100;
+    score -= 200;
+    upgradedThisWave = true;
     keys["p"] = false;
   }
 
   bullets.forEach(b => (b.y -= 10));
   enemyBullets.forEach(b => (b.y += 6));
+
+  // Cull off-screen bullets so they never accumulate
+  bullets = bullets.filter(b => b.y + b.height > 0);
+  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
 
   // Enemy behavior
   enemies.forEach(e => {
@@ -270,9 +277,16 @@ function update() {
 
   // Bullet collisions
   for (let i = bullets.length - 1; i >= 0; i--) {
+    // Guard: bullet may have already been removed in a previous iteration
+    if (!bullets[i]) continue;
+
+    let bulletUsed = false;
+
     for (let j = enemies.length - 1; j >= 0; j--) {
       if (hit(bullets[i], enemies[j])) {
-        bullets.splice(i, 1);
+        // Mark bullet as used BEFORE resolving enemy logic so we don't
+        // re-enter enemy checks with a stale index after splice
+        bulletUsed = true;
         enemies[j].hp--;
 
         if (enemies[j].hp <= 0) {
@@ -286,12 +300,17 @@ function update() {
             // Show victory screen instead of game over screen
             showVictoryScreen();
           } else {
-            score += 10;
+            score += 25;
             enemies.splice(j, 1);
           }
         }
         break;
       }
+    }
+
+    // Splice the bullet once, after the inner loop, only if it hit something
+    if (bulletUsed) {
+      bullets.splice(i, 1);
     }
   }
 
@@ -320,9 +339,18 @@ function update() {
 
   if (flashTimer > 0) flashTimer--;
 
+  // Pickle invasion — lose if any enemy reaches 2 rows above the player
+  const invasionLine = player.y - 100; // 2 enemy rows (50px each) above player
+  if (!bossActive && enemies.some(e => e.y + e.height >= invasionLine)) {
+    gameOver = true;
+    endScreen.style.display = "flex";
+    endScore.textContent = `Score: ${score}`;
+  }
+
   // Next wave / boss
   if (enemies.length === 0 && !bossActive && !gameOver) {
     wave++;
+    upgradedThisWave = false;
     if (wave === 4) {
       spawnBoss();
     } else {
@@ -355,7 +383,21 @@ function draw() {
     return;
   }
 
-  // Player
+  // Danger line — 2 enemy rows above player
+  if (!bossActive) {
+    const invasionLine = player.y - 100;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 60, 60, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, invasionLine);
+    ctx.lineTo(canvas.width, invasionLine);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Player (drawn after danger line so it appears on top)
   if (flashTimer % 2 === 0) {
     ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
   }
