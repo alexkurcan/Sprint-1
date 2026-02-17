@@ -8,16 +8,19 @@ const endScreen = document.getElementById("endScreen");
 const endScore = document.getElementById("endScore");
 const victoryScreen = document.getElementById("victoryScreen");
 const victoryScore = document.getElementById("victoryScore");
-const quitPopup = document.getElementById("quitPopup");
+const menuPopup = document.getElementById("menuPopup");
 const upgradePopup = document.getElementById("upgradePopup");
 
 let gameStarted = false;
 let paused = false;
-let quitPending = false;
+let menuPending = false;
 let upgradePopupTimer = 0;
 
+// Track the rAF handle so stale loops can be cancelled before starting a new one
+let rafId = null;
+
 // ======================
-// QUIT & UPGRADE POPUP HELPERS
+// MENU & UPGRADE POPUP HELPERS
 // ======================
 function showUpgradePopup(msg) {
   upgradePopup.textContent = msg;
@@ -25,9 +28,14 @@ function showUpgradePopup(msg) {
   upgradePopupTimer = 120; // ~2 seconds at 60fps
 }
 
-document.getElementById("quitYes").addEventListener("click", () => {
-  quitPopup.style.display = "none";
-  quitPending = false;
+document.getElementById("menuYes").addEventListener("click", () => {
+  // Cancel the running loop so it never stacks on the next game
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
+  menuPopup.style.display = "none";
+  menuPending = false;
   gameStarted = false;
   gameOver = true;
   paused = false;
@@ -39,9 +47,9 @@ document.getElementById("quitYes").addEventListener("click", () => {
   startScreen.style.display = "flex";
 });
 
-document.getElementById("quitNo").addEventListener("click", () => {
-  quitPopup.style.display = "none";
-  quitPending = false;
+document.getElementById("menuNo").addEventListener("click", () => {
+  menuPopup.style.display = "none";
+  menuPending = false;
   paused = false;
 });
 
@@ -316,14 +324,16 @@ document.addEventListener("keydown", e => {
 
   if (e.key.toLowerCase() === "r" && gameOver) {
     resetGame();
+    // Only start a loop if one isn't already running
+    if (rafId === null) loop();
   }
 
-  // Q — open quit confirmation (only during active gameplay)
+  // Q — open menu confirmation (only during active gameplay)
   if (e.key.toLowerCase() === "q" && gameStarted && !gameOver) {
-    if (!quitPending) {
-      quitPending = true;
+    if (!menuPending) {
+      menuPending = true;
       paused = true;
-      quitPopup.style.display = "flex";
+      menuPopup.style.display = "flex";
     }
   }
 });
@@ -429,9 +439,9 @@ function resetGame() {
   startScreen.style.display = "none";
   victoryScreen.style.display = "none";
   upgradePopup.style.display = "none";
-  quitPopup.style.display = "none";
+  menuPopup.style.display = "none";
   upgradePopupTimer = 0;
-  quitPending = false;
+  menuPending = false;
 
   spawnWave();
 }
@@ -443,6 +453,11 @@ startScreen.addEventListener("click", () => {
   if (gameStarted) return;
   gameStarted = true;
   resetGame();
+  // Cancel any stale loop before starting fresh
+  if (rafId !== null) {
+    cancelAnimationFrame(rafId);
+    rafId = null;
+  }
   loop();
 });
 
@@ -730,8 +745,15 @@ function draw() {
 // ======================
 // LOOP
 // ======================
+// Stores its rAF id and clears it on game over so no two loops
+// ever run concurrently — prevents speed-doubling and freezing on restart.
 function loop() {
   update();
   draw();
-  requestAnimationFrame(loop);
+
+  if (!gameOver) {
+    rafId = requestAnimationFrame(loop);
+  } else {
+    rafId = null;
+  }
 }
