@@ -13,27 +13,241 @@ let gameStarted = false;
 let paused = false;
 
 // ======================
-// IMAGES
+// SPRITE DRAWING FUNCTIONS
+// (Drawn directly on canvas — zero CORS, zero background issues)
 // ======================
-const playerImg = new Image();
-playerImg.src =
-  "https://png.pngtree.com/png-vector/20241016/ourlarge/pngtree-vampire-cartoon-png-image_14089958.png";
 
-const pickleImg = new Image();
-pickleImg.src =
-  "https://www.clipartmax.com/png/middle/15-153390_image-result-for-pickle-clipart-food-prints-family-transparent-background-pickle-clipart.png";
+function drawPlayer(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
 
-const strongPickleImg = new Image();
-strongPickleImg.src =
-  "https://img.freepik.com/premium-psd/png-pickled-cucumber-transparent-background_53876-497988.jpg";
+  // Cape
+  ctx.fillStyle = "#5a0080";
+  ctx.beginPath();
+  ctx.moveTo(-w / 2, h * 0.1);
+  ctx.lineTo(-w * 0.6, h / 2);
+  ctx.lineTo(w * 0.6, h / 2);
+  ctx.lineTo(w / 2, h * 0.1);
+  ctx.closePath();
+  ctx.fill();
 
+  // Body
+  ctx.fillStyle = "#2a002a";
+  ctx.fillRect(-w * 0.25, -h * 0.15, w * 0.5, h * 0.4);
+
+  // Head
+  ctx.fillStyle = "#f5e6d0";
+  ctx.beginPath();
+  ctx.ellipse(0, -h * 0.3, w * 0.22, h * 0.25, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Widow's peak / bat ears
+  ctx.fillStyle = "#1a001a";
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.22, -h * 0.38);
+  ctx.lineTo(-w * 0.3, -h * 0.52);
+  ctx.lineTo(-w * 0.12, -h * 0.42);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.22, -h * 0.38);
+  ctx.lineTo(w * 0.3, -h * 0.52);
+  ctx.lineTo(w * 0.12, -h * 0.42);
+  ctx.closePath();
+  ctx.fill();
+
+  // Glowing red eyes
+  ctx.fillStyle = "#ff0033";
+  ctx.shadowColor = "#ff0033";
+  ctx.shadowBlur = 6;
+  ctx.beginPath();
+  ctx.ellipse(-w * 0.08, -h * 0.32, w * 0.05, h * 0.05, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w * 0.08, -h * 0.32, w * 0.05, h * 0.05, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+
+  // Fangs
+  ctx.fillStyle = "#ffffff";
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.05, -h * 0.18);
+  ctx.lineTo(-w * 0.02, -h * 0.08);
+  ctx.lineTo(w * 0.01, -h * 0.18);
+  ctx.closePath();
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.02, -h * 0.18);
+  ctx.lineTo(w * 0.05, -h * 0.08);
+  ctx.lineTo(w * 0.08, -h * 0.18);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.restore();
+}
+
+function drawPickle(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
+
+  ctx.fillStyle = "#4a7c3f";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.38, h * 0.48, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#6ab04c";
+  ctx.lineWidth = 2;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.arc(i * w * 0.1, 0, h * 0.35, Math.PI * 0.15, Math.PI * 0.85);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = "#3a6a2f";
+  [[-w * 0.15, -h * 0.1], [w * 0.1, h * 0.15], [-w * 0.05, h * 0.25], [w * 0.2, -h * 0.2]].forEach(([bx, by]) => {
+    ctx.beginPath();
+    ctx.arc(bx, by, 3, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.ellipse(-w * 0.12, -h * 0.1, w * 0.08, h * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w * 0.12, -h * 0.1, w * 0.08, h * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = "#111";
+  ctx.beginPath();
+  ctx.arc(-w * 0.1, -h * 0.1, w * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w * 0.14, -h * 0.1, w * 0.04, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Angry brows
+  ctx.strokeStyle = "#222";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(-w * 0.2, -h * 0.22);
+  ctx.lineTo(-w * 0.04, -h * 0.18);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(w * 0.04, -h * 0.18);
+  ctx.lineTo(w * 0.2, -h * 0.22);
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+function drawStrongPickle(x, y, w, h) {
+  ctx.save();
+  ctx.translate(x + w / 2, y + h / 2);
+
+  ctx.fillStyle = "#2d5a1e";
+  ctx.beginPath();
+  ctx.ellipse(0, 0, w * 0.42, h * 0.48, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = "#1a3d0f";
+  ctx.lineWidth = 3;
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.arc(i * w * 0.1, 0, h * 0.38, Math.PI * 0.15, Math.PI * 0.85);
+    ctx.stroke();
+  }
+
+  // Spiky crown
+  ctx.fillStyle = "#8b0000";
+  for (let i = -2; i <= 2; i++) {
+    ctx.beginPath();
+    ctx.moveTo(i * w * 0.15 - w * 0.06, -h * 0.42);
+    ctx.lineTo(i * w * 0.15, -h * 0.6);
+    ctx.lineTo(i * w * 0.15 + w * 0.06, -h * 0.42);
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  ctx.fillStyle = "#ff2200";
+  ctx.shadowColor = "#ff2200";
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.ellipse(-w * 0.14, -h * 0.1, w * 0.09, h * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(w * 0.14, -h * 0.1, w * 0.09, h * 0.09, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "#fff";
+  ctx.beginPath();
+  ctx.arc(-w * 0.12, -h * 0.1, w * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(w * 0.16, -h * 0.1, w * 0.03, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+// ======================
+// BOSS IMAGE
+// ======================
 const bossPickleImg = new Image();
 bossPickleImg.src =
   "https://png.pngtree.com/png-vector/20240528/ourmid/pngtree-cartoon-pickle-character-with-big-eyes-png-image_12526411.png";
 
-const explosionImg = new Image();
-explosionImg.src =
-  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ5MsJ_CSDz6qeaC3vBwG8ETNKHBaMeefEO2g&s";
+function drawPickleSlices(ex, progress) {
+  const alpha = 1 - progress;
+  ctx.save();
+  ctx.globalAlpha = alpha;
+
+  ex.slices.forEach(slice => {
+    const dist = progress * slice.speed;
+    const sx = ex.cx + Math.cos(slice.angle) * dist;
+    const sy = ex.cy + Math.sin(slice.angle) * dist;
+    const rot = slice.spin * progress * Math.PI * 3;
+    const sw = slice.w;
+    const sh = slice.h;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(rot);
+
+    // Slice body — green oval (cross-section of pickle)
+    ctx.fillStyle = "#4a7c3f";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lighter green flesh ring
+    ctx.strokeStyle = "#6ab04c";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw * 0.7, sh * 0.7, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Seeds (2 small white ovals)
+    ctx.fillStyle = "#e8f5c8";
+    ctx.beginPath();
+    ctx.ellipse(-sw * 0.25, 0, sw * 0.15, sh * 0.2, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(sw * 0.2, sh * 0.1, sw * 0.12, sh * 0.18, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark outline
+    ctx.strokeStyle = "#2d5a1e";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
+}
 
 // ======================
 // GAME STATE
@@ -103,7 +317,7 @@ function spawnWave() {
         height: 30,
         dx: 1 + wave * 0.3,
         hp: strong ? 3 : 1,
-        img: strong ? strongPickleImg : pickleImg,
+        type: strong ? "strong" : "normal",
         wobble: Math.random() * 10,
         boss: false
       });
@@ -125,7 +339,8 @@ function spawnBoss() {
     height: 120,
     dx: 2,
     hp: 50,
-    img: bossPickleImg,
+    maxHp: 50,
+    type: "boss",
     wobble: 0,
     boss: true,
     shootRate: 0.03
@@ -221,7 +436,7 @@ function update() {
   fireCooldown--;
 
   // Upgrade
-  if (keys["p"] && score >= 150 && !upgradedThisWave) {
+  if (keys["p"] && score >= 200 && !upgradedThisWave) {
     fireRate = Math.max(5, fireRate - 5);
     score -= 200;
     upgradedThisWave = true;
@@ -290,7 +505,24 @@ function update() {
         enemies[j].hp--;
 
         if (enemies[j].hp <= 0) {
-          explosions.push({ x: enemies[j].x, y: enemies[j].y, timer: 20 });
+          const numSlices = enemies[j].boss ? 10 : 5;
+          const baseSpeed = enemies[j].boss ? 90 : 45;
+          const sliceW = enemies[j].boss ? 14 : 9;
+          const sliceH = enemies[j].boss ? 10 : 7;
+          const slices = Array.from({ length: numSlices }, (_, k) => ({
+            angle: (k / numSlices) * Math.PI * 2 + (Math.random() - 0.5) * 0.6,
+            speed: baseSpeed + Math.random() * baseSpeed * 0.6,
+            spin: (Math.random() - 0.5) * 2,
+            w: sliceW + Math.random() * 4,
+            h: sliceH + Math.random() * 3
+          }));
+          explosions.push({
+            cx: enemies[j].x + enemies[j].width / 2,
+            cy: enemies[j].y + enemies[j].height / 2,
+            slices,
+            timer: 28,
+            maxTimer: 28
+          });
 
           if (enemies[j].boss) {
             score += 500;
@@ -399,7 +631,7 @@ function draw() {
 
   // Player (drawn after danger line so it appears on top)
   if (flashTimer % 2 === 0) {
-    ctx.drawImage(playerImg, player.x, player.y, player.width, player.height);
+    drawPlayer(player.x, player.y, player.width, player.height);
   }
 
   // Bullets
@@ -412,12 +644,27 @@ function draw() {
   // Enemies
   enemies.forEach(e => {
     const wobbleY = Math.sin(e.wobble) * 3;
-    ctx.drawImage(e.img, e.x, e.y + wobbleY, e.width, e.height);
+    if (e.type === "boss") {
+      ctx.drawImage(bossPickleImg, e.x, e.y + wobbleY, e.width, e.height);
+      // Boss HP bar
+      const hpPct = e.hp / e.maxHp;
+      ctx.fillStyle = "#222";
+      ctx.fillRect(e.x, e.y + e.height + 6, e.width, 8);
+      ctx.fillStyle = hpPct > 0.5 ? "#00ff66" : hpPct > 0.25 ? "#ffaa00" : "#ff2200";
+      ctx.fillRect(e.x, e.y + e.height + 6, e.width * hpPct, 8);
+      ctx.strokeStyle = "#555";
+      ctx.lineWidth = 1;
+      ctx.strokeRect(e.x, e.y + e.height + 6, e.width, 8);
+    } else if (e.type === "strong") {
+      drawStrongPickle(e.x, e.y + wobbleY, e.width, e.height);
+    } else {
+      drawPickle(e.x, e.y + wobbleY, e.width, e.height);
+    }
   });
 
-  // Explosions
+  // Pickle slice explosions
   explosions.forEach(ex => {
-    ctx.drawImage(explosionImg, ex.x, ex.y, 40, 40);
+    drawPickleSlices(ex, 1 - ex.timer / ex.maxTimer);
   });
 }
 
