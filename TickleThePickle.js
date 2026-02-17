@@ -6,9 +6,44 @@ const ctx = canvas.getContext("2d");
 const startScreen = document.getElementById("startScreen");
 const endScreen = document.getElementById("endScreen");
 const endScore = document.getElementById("endScore");
+const victoryScreen = document.getElementById("victoryScreen");
+const victoryScore = document.getElementById("victoryScore");
+const quitPopup = document.getElementById("quitPopup");
+const upgradePopup = document.getElementById("upgradePopup");
 
 let gameStarted = false;
 let paused = false;
+let quitPending = false;
+let upgradePopupTimer = 0;
+
+// ======================
+// QUIT & UPGRADE POPUP HELPERS
+// ======================
+function showUpgradePopup(msg) {
+  upgradePopup.textContent = msg;
+  upgradePopup.style.display = "block";
+  upgradePopupTimer = 120; // ~2 seconds at 60fps
+}
+
+document.getElementById("quitYes").addEventListener("click", () => {
+  quitPopup.style.display = "none";
+  quitPending = false;
+  gameStarted = false;
+  gameOver = true;
+  paused = false;
+  // Clear canvas and show start screen
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  endScreen.style.display = "none";
+  victoryScreen.style.display = "none";
+  startScreen.style.display = "flex";
+});
+
+document.getElementById("quitNo").addEventListener("click", () => {
+  quitPopup.style.display = "none";
+  quitPending = false;
+  paused = false;
+});
 
 // ======================
 // SPRITE DRAWING FUNCTIONS
@@ -187,118 +222,62 @@ function drawStrongPickle(x, y, w, h) {
   ctx.restore();
 }
 
-function drawBossPickle(x, y, w, h) {
-  ctx.save();
-  ctx.translate(x + w / 2, y + h / 2);
+// ======================
+// BOSS IMAGE
+// ======================
+const bossPickleImg = new Image();
+bossPickleImg.src =
+  "https://png.pngtree.com/png-vector/20240528/ourmid/pngtree-cartoon-pickle-character-with-big-eyes-png-image_12526411.png";
 
-  // Glow aura
-  const grad = ctx.createRadialGradient(0, 0, h * 0.3, 0, 0, h * 0.7);
-  grad.addColorStop(0, "rgba(0,255,80,0.18)");
-  grad.addColorStop(1, "rgba(0,255,80,0)");
-  ctx.fillStyle = grad;
-  ctx.beginPath();
-  ctx.arc(0, 0, h * 0.7, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Body
-  ctx.fillStyle = "#1a4a10";
-  ctx.beginPath();
-  ctx.ellipse(0, 0, w * 0.45, h * 0.48, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Warts
-  ctx.fillStyle = "#0f2e08";
-  [[-w*0.3,-h*0.2],[w*0.28,h*0.2],[-w*0.1,h*0.35],[w*0.35,-h*0.05],[-w*0.32,h*0.1]].forEach(([bx, by]) => {
-    ctx.beginPath();
-    ctx.arc(bx, by, 7, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Gold crown
-  ctx.fillStyle = "#ffd700";
-  ctx.beginPath();
-  ctx.moveTo(-w * 0.35, -h * 0.45);
-  const pts = [-w*0.35, -w*0.175, 0, w*0.175, w*0.35];
-  const ht  = [-h*0.55, -h*0.68, -h*0.75, -h*0.68, -h*0.55];
-  pts.forEach((cx, i) => ctx.lineTo(cx, ht[i]));
-  ctx.lineTo(w * 0.35, -h * 0.45);
-  ctx.closePath();
-  ctx.fill();
-  ctx.strokeStyle = "#b8860b";
-  ctx.lineWidth = 2;
-  ctx.stroke();
-
-  // Eyes
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.ellipse(-w * 0.18, -h * 0.08, w * 0.12, h * 0.14, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.ellipse(w * 0.18, -h * 0.08, w * 0.12, h * 0.14, 0, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.fillStyle = "#ff0000";
-  ctx.shadowColor = "#ff0000";
-  ctx.shadowBlur = 8;
-  ctx.beginPath();
-  ctx.arc(-w * 0.18, -h * 0.08, w * 0.07, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(w * 0.18, -h * 0.08, w * 0.07, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.fillStyle = "#000";
-  ctx.beginPath();
-  ctx.arc(-w * 0.15, -h * 0.1, w * 0.03, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(w * 0.21, -h * 0.1, w * 0.03, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Grin
-  ctx.strokeStyle = "#88ff00";
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.arc(0, h * 0.1, w * 0.2, 0, Math.PI);
-  ctx.stroke();
-
-  // Fangs
-  ctx.fillStyle = "#fff";
-  [[-w*0.1,-w*0.02],[w*0.02,w*0.1]].forEach(([l, r]) => {
-    ctx.beginPath();
-    ctx.moveTo(l, h * 0.1);
-    ctx.lineTo((l + r) / 2, h * 0.22);
-    ctx.lineTo(r, h * 0.1);
-    ctx.closePath();
-    ctx.fill();
-  });
-
-  ctx.restore();
-}
-
-function drawExplosion(x, y, size, progress) {
-  ctx.save();
-  ctx.translate(x + size / 2, y + size / 2);
-  const rays = 8;
-  const outerR = size * 0.5 * (1 - progress * 0.3);
-  const innerR = size * 0.15;
+function drawPickleSlices(ex, progress) {
   const alpha = 1 - progress;
-
+  ctx.save();
   ctx.globalAlpha = alpha;
-  ctx.fillStyle = `hsl(${30 + progress * 40}, 100%, 60%)`;
-  ctx.beginPath();
-  for (let i = 0; i < rays * 2; i++) {
-    const angle = (i / (rays * 2)) * Math.PI * 2;
-    const r = i % 2 === 0 ? outerR : innerR;
-    if (i === 0) ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
-    else ctx.lineTo(Math.cos(angle) * r, Math.sin(angle) * r);
-  }
-  ctx.closePath();
-  ctx.fill();
 
-  ctx.fillStyle = `rgba(255,255,200,${alpha})`;
-  ctx.beginPath();
-  ctx.arc(0, 0, innerR * 1.5, 0, Math.PI * 2);
-  ctx.fill();
+  ex.slices.forEach(slice => {
+    const dist = progress * slice.speed;
+    const sx = ex.cx + Math.cos(slice.angle) * dist;
+    const sy = ex.cy + Math.sin(slice.angle) * dist;
+    const rot = slice.spin * progress * Math.PI * 3;
+    const sw = slice.w;
+    const sh = slice.h;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(rot);
+
+    // Slice body — green oval (cross-section of pickle)
+    ctx.fillStyle = "#4a7c3f";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Lighter green flesh ring
+    ctx.strokeStyle = "#6ab04c";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw * 0.7, sh * 0.7, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Seeds (2 small white ovals)
+    ctx.fillStyle = "#e8f5c8";
+    ctx.beginPath();
+    ctx.ellipse(-sw * 0.25, 0, sw * 0.15, sh * 0.2, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(sw * 0.2, sh * 0.1, sw * 0.12, sh * 0.18, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Dark outline
+    ctx.strokeStyle = "#2d5a1e";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, sw, sh, 0, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.restore();
+  });
+
   ctx.globalAlpha = 1;
   ctx.restore();
 }
@@ -309,13 +288,14 @@ function drawExplosion(x, y, size, progress) {
 let score, lives, gameOver, fireCooldown, fireRate, wave, flashTimer;
 let bossActive = false;
 let bossDefeated = false;
+let upgradedThisWave = false;
 
 // ======================
 // PLAYER
 // ======================
 const player = {
   width: 60,
-  height: 55,
+  height: 35,
   speed: 6,
   x: 0,
   y: 0
@@ -329,28 +309,54 @@ const keys = {};
 document.addEventListener("keydown", e => {
   keys[e.key.toLowerCase()] = true;
   if (e.code === "Space") e.preventDefault();
-  if (e.key === "Escape" && gameStarted && !gameOver) paused = !paused;
-  if (e.key.toLowerCase() === "r" && gameOver) resetGame();
+
+  if (e.key === "Escape" && gameStarted && !gameOver) {
+    paused = !paused;
+  }
+
+  if (e.key.toLowerCase() === "r" && gameOver) {
+    resetGame();
+  }
+
+  // Q — open quit confirmation (only during active gameplay)
+  if (e.key.toLowerCase() === "q" && gameStarted && !gameOver) {
+    if (!quitPending) {
+      quitPending = true;
+      paused = true;
+      quitPopup.style.display = "flex";
+    }
+  }
 });
-document.addEventListener("keyup", e => { keys[e.key.toLowerCase()] = false; });
+
+document.addEventListener("keyup", e => {
+  keys[e.key.toLowerCase()] = false;
+});
 
 // ======================
 // OBJECTS
 // ======================
-let bullets = [], enemyBullets = [], explosions = [], enemies = [];
+let bullets = [];
+let enemyBullets = [];
+let explosions = [];
+let enemies = [];
 
 // ======================
 // SPAWN WAVES
 // ======================
 function spawnWave() {
   enemies = [];
-  const rows = 3 + wave, cols = 6;
+  const rows = 3 + wave;
+  const cols = 6;
+
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const strong = Math.random() < 0.2;
+
       enemies.push({
-        x: 80 + c * 70, y: 60 + r * 50,
-        width: 40, height: 30,
+        x: 80 + c * 70,
+        y: 60 + r * 50,
+        width: 40,
+        height: 30,
         dx: 1 + wave * 0.3,
         hp: strong ? 3 : 1,
         type: strong ? "strong" : "normal",
@@ -361,29 +367,78 @@ function spawnWave() {
   }
 }
 
+// ======================
+// BOSS SPAWN
+// ======================
 function spawnBoss() {
   enemies = [];
   bossActive = true;
+
   enemies.push({
-    x: canvas.width / 2 - 80, y: 80,
-    width: 160, height: 120,
-    dx: 2, hp: 50, maxHp: 50,
-    type: "boss", wobble: 0, boss: true, shootRate: 0.03
+    x: canvas.width / 2 - 80,
+    y: 80,
+    width: 160,
+    height: 120,
+    dx: 2,
+    hp: 50,
+    maxHp: 50,
+    type: "boss",
+    wobble: 0,
+    boss: true,
+    shootRate: 0.03
   });
 }
 
+// ======================
+// SHOW VICTORY SCREEN
+// ======================
+function showVictoryScreen() {
+  // Hide the canvas UI by clearing it with a solid color so game elements
+  // don't bleed through the overlay
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  victoryScore.textContent = `Final Score: ${score}`;
+  victoryScreen.style.display = "flex";
+}
+
+// ======================
+// RESET GAME
+// ======================
 function resetGame() {
-  score = 0; lives = 3; fireRate = 20; fireCooldown = 0;
-  wave = 1; gameOver = false; paused = false; flashTimer = 0;
-  bossActive = false; bossDefeated = false;
-  bullets = []; enemyBullets = []; explosions = [];
+  score = 0;
+  lives = 3;
+  fireRate = 20;
+  fireCooldown = 0;
+  wave = 1;
+  gameOver = false;
+  paused = false;
+  flashTimer = 0;
+  bossActive = false;
+  bossDefeated = false;
+  upgradedThisWave = false;
+
+  bullets = [];
+  enemyBullets = [];
+  explosions = [];
+
   player.x = canvas.width / 2 - player.width / 2;
   player.y = canvas.height - 80;
+
   endScreen.style.display = "none";
   startScreen.style.display = "none";
+  victoryScreen.style.display = "none";
+  upgradePopup.style.display = "none";
+  quitPopup.style.display = "none";
+  upgradePopupTimer = 0;
+  quitPending = false;
+
   spawnWave();
 }
 
+// ======================
+// START GAME
+// ======================
 startScreen.addEventListener("click", () => {
   if (gameStarted) return;
   gameStarted = true;
@@ -391,9 +446,16 @@ startScreen.addEventListener("click", () => {
   loop();
 });
 
+// ======================
+// COLLISION
+// ======================
 function hit(a, b) {
-  return a.x < b.x + b.width && a.x + a.width > b.x &&
-         a.y < b.y + b.height && a.y + a.height > b.y;
+  return (
+    a.x < b.x + b.width &&
+    a.x + a.width > b.x &&
+    a.y < b.y + b.height &&
+    a.y + a.height > b.y
+  );
 }
 
 // ======================
@@ -402,80 +464,189 @@ function hit(a, b) {
 function update() {
   if (!gameStarted || gameOver || paused) return;
 
+  // Player movement
   if (keys["a"] && player.x > 0) player.x -= player.speed;
-  if (keys["d"] && player.x < canvas.width - player.width) player.x += player.speed;
+  if (keys["d"] && player.x < canvas.width - player.width)
+    player.x += player.speed;
 
+  // Shooting
   if (keys[" "] && fireCooldown <= 0) {
-    bullets.push({ x: player.x + player.width / 2 - 2, y: player.y, width: 4, height: 10 });
+    bullets.push({
+      x: player.x + player.width / 2 - 2,
+      y: player.y,
+      width: 4,
+      height: 10
+    });
     fireCooldown = fireRate;
   }
   fireCooldown--;
 
-  if (keys["p"] && score >= 100) {
-    fireRate = Math.max(5, fireRate - 5);
-    score -= 100;
+  // Upgrade
+  if (keys["p"]) {
+    if (upgradedThisWave) {
+      showUpgradePopup("Already upgraded this wave!");
+    } else if (score < 200) {
+      showUpgradePopup(`Need 200 pts to upgrade! (${score}/200)`);
+    } else {
+      fireRate = Math.max(5, fireRate - 5);
+      score -= 200;
+      upgradedThisWave = true;
+      showUpgradePopup("🔥 Fire rate upgraded!");
+    }
     keys["p"] = false;
   }
 
-  bullets.forEach(b => b.y -= 10);
-  enemyBullets.forEach(b => b.y += 6);
+  // Tick down upgrade popup
+  if (upgradePopupTimer > 0) {
+    upgradePopupTimer--;
+    if (upgradePopupTimer === 0) upgradePopup.style.display = "none";
+  }
 
+  bullets.forEach(b => (b.y -= 10));
+  enemyBullets.forEach(b => (b.y += 6));
+
+  // Cull off-screen bullets so they never accumulate
+  bullets = bullets.filter(b => b.y + b.height > 0);
+  enemyBullets = enemyBullets.filter(b => b.y < canvas.height);
+
+  // Enemy behavior
   enemies.forEach(e => {
     e.x += e.dx;
     e.wobble += 0.1;
+
     if (e.boss) {
       if (e.x <= 0 || e.x >= canvas.width - e.width) e.dx *= -1;
-      if (Math.random() < e.shootRate)
-        enemyBullets.push({ x: e.x + e.width / 2 - 3, y: e.y + e.height, width: 6, height: 14 });
+
+      if (Math.random() < e.shootRate) {
+        enemyBullets.push({
+          x: e.x + e.width / 2 - 3,
+          y: e.y + e.height,
+          width: 6,
+          height: 14
+        });
+      }
     } else {
-      if (Math.random() < 0.002 * wave)
-        enemyBullets.push({ x: e.x + e.width / 2 - 2, y: e.y + e.height, width: 4, height: 10 });
+      if (Math.random() < 0.002 * wave) {
+        enemyBullets.push({
+          x: e.x + e.width / 2 - 2,
+          y: e.y + e.height,
+          width: 4,
+          height: 10
+        });
+      }
     }
   });
 
-  if (enemies.some(e => !e.boss && (e.x < 0 || e.x > canvas.width - e.width))) {
-    enemies.forEach(e => { if (!e.boss) { e.dx *= -1; e.y += 10; } });
+  // Bounce normal enemies
+  if (
+    enemies.some(e => !e.boss && (e.x < 0 || e.x > canvas.width - e.width))
+  ) {
+    enemies.forEach(e => {
+      if (!e.boss) {
+        e.dx *= -1;
+        e.y += 10;
+      }
+    });
   }
 
+  // Bullet collisions
   for (let i = bullets.length - 1; i >= 0; i--) {
+    // Guard: bullet may have already been removed in a previous iteration
+    if (!bullets[i]) continue;
+
+    let bulletUsed = false;
+
     for (let j = enemies.length - 1; j >= 0; j--) {
       if (hit(bullets[i], enemies[j])) {
-        bullets.splice(i, 1);
+        // Mark bullet as used BEFORE resolving enemy logic so we don't
+        // re-enter enemy checks with a stale index after splice
+        bulletUsed = true;
         enemies[j].hp--;
+
         if (enemies[j].hp <= 0) {
-          explosions.push({ x: enemies[j].x, y: enemies[j].y, size: enemies[j].boss ? 120 : 40, timer: 20, maxTimer: 20 });
-          if (enemies[j].boss) { score += 500; bossDefeated = true; gameOver = true; }
-          else score += 10;
-          enemies.splice(j, 1);
+          const numSlices = enemies[j].boss ? 10 : 5;
+          const baseSpeed = enemies[j].boss ? 90 : 45;
+          const sliceW = enemies[j].boss ? 14 : 9;
+          const sliceH = enemies[j].boss ? 10 : 7;
+          const slices = Array.from({ length: numSlices }, (_, k) => ({
+            angle: (k / numSlices) * Math.PI * 2 + (Math.random() - 0.5) * 0.6,
+            speed: baseSpeed + Math.random() * baseSpeed * 0.6,
+            spin: (Math.random() - 0.5) * 2,
+            w: sliceW + Math.random() * 4,
+            h: sliceH + Math.random() * 3
+          }));
+          explosions.push({
+            cx: enemies[j].x + enemies[j].width / 2,
+            cy: enemies[j].y + enemies[j].height / 2,
+            slices,
+            timer: 28,
+            maxTimer: 28
+          });
+
+          if (enemies[j].boss) {
+            score += 500;
+            bossDefeated = true;
+            gameOver = true;
+            enemies.splice(j, 1);
+            // Show victory screen instead of game over screen
+            showVictoryScreen();
+          } else {
+            score += 25;
+            enemies.splice(j, 1);
+          }
         }
         break;
       }
     }
+
+    // Splice the bullet once, after the inner loop, only if it hit something
+    if (bulletUsed) {
+      bullets.splice(i, 1);
+    }
   }
 
+  // Player hit
   for (let i = enemyBullets.length - 1; i >= 0; i--) {
     if (hit(enemyBullets[i], player)) {
       enemyBullets.splice(i, 1);
       lives--;
       flashTimer = 10;
-      if (lives <= 0) gameOver = true;
+      if (lives <= 0) {
+        gameOver = true;
+        // Only show game over if it was NOT a boss victory
+        if (!bossDefeated) {
+          endScreen.style.display = "flex";
+          endScore.textContent = `Score: ${score}`;
+        }
+      }
     }
   }
 
-  explosions.forEach((ex, i) => { ex.timer--; if (ex.timer <= 0) explosions.splice(i, 1); });
+  // Explosions
+  explosions.forEach((ex, i) => {
+    ex.timer--;
+    if (ex.timer <= 0) explosions.splice(i, 1);
+  });
+
   if (flashTimer > 0) flashTimer--;
 
-  bullets = bullets.filter(b => b.y > -20);
-  enemyBullets = enemyBullets.filter(b => b.y < canvas.height + 20);
-
-  if (enemies.length === 0 && !bossActive) {
-    wave++;
-    if (wave === 4) spawnBoss(); else spawnWave();
-  }
-
-  if (gameOver) {
+  // Pickle invasion — lose if any enemy reaches 2 rows above the player
+  const invasionLine = player.y - 100; // 2 enemy rows (50px each) above player
+  if (!bossActive && enemies.some(e => e.y + e.height >= invasionLine)) {
+    gameOver = true;
     endScreen.style.display = "flex";
     endScore.textContent = `Score: ${score}`;
+  }
+
+  // Next wave / boss
+  if (enemies.length === 0 && !bossActive && !gameOver) {
+    wave++;
+    upgradedThisWave = false;
+    if (wave === 4) {
+      spawnBoss();
+    } else {
+      spawnWave();
+    }
   }
 }
 
@@ -483,43 +654,58 @@ function update() {
 // DRAW
 // ======================
 function draw() {
+  // If game is over and we're showing a full-screen overlay, skip drawing
+  if (gameOver) return;
+
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+  // UI
   ctx.font = "16px monospace";
   ctx.fillStyle = "#00ff66";
   ctx.fillText(`Score: ${score}`, 10, 20);
   ctx.fillText(`Lives: ${lives}`, 10, 40);
   ctx.fillText(`Wave: ${wave}`, 10, 60);
-  ctx.fillStyle = "#888";
-  ctx.font = "11px monospace";
-  ctx.fillText("P = upgrade fire (-100pts)", 10, canvas.height - 10);
 
   if (paused) {
     ctx.font = "30px monospace";
-    ctx.fillStyle = "#00ff66";
     ctx.textAlign = "center";
     ctx.fillText("PAUSED", canvas.width / 2, canvas.height / 2);
     ctx.textAlign = "left";
     return;
   }
 
-  if (flashTimer % 2 === 0) drawPlayer(player.x, player.y, player.width, player.height);
+  // Danger line — 2 enemy rows above player
+  if (!bossActive) {
+    const invasionLine = player.y - 100;
+    ctx.save();
+    ctx.strokeStyle = "rgba(255, 60, 60, 0.45)";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath();
+    ctx.moveTo(0, invasionLine);
+    ctx.lineTo(canvas.width, invasionLine);
+    ctx.stroke();
+    ctx.restore();
+  }
 
-  ctx.fillStyle = "#ffff00";
-  ctx.shadowColor = "#ffff00";
-  ctx.shadowBlur = 6;
-  bullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
+  // Player (drawn after danger line so it appears on top)
+  if (flashTimer % 2 === 0) {
+    drawPlayer(player.x, player.y, player.width, player.height);
+  }
 
-  ctx.fillStyle = "#ff4444";
-  ctx.shadowColor = "#ff0000";
-  ctx.shadowBlur = 8;
-  enemyBullets.forEach(b => { ctx.fillRect(b.x, b.y, b.width, b.height); });
-  ctx.shadowBlur = 0;
+  // Bullets
+  ctx.fillStyle = "yellow";
+  bullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
 
+  ctx.fillStyle = "red";
+  enemyBullets.forEach(b => ctx.fillRect(b.x, b.y, b.width, b.height));
+
+  // Enemies
   enemies.forEach(e => {
-    const wy = Math.sin(e.wobble) * 3;
-    if (e.boss) {
-      drawBossPickle(e.x, e.y + wy, e.width, e.height);
+    const wobbleY = Math.sin(e.wobble) * 3;
+    if (e.type === "boss") {
+      ctx.drawImage(bossPickleImg, e.x, e.y + wobbleY, e.width, e.height);
+      // Boss HP bar
       const hpPct = e.hp / e.maxHp;
       ctx.fillStyle = "#222";
       ctx.fillRect(e.x, e.y + e.height + 6, e.width, 8);
@@ -529,14 +715,15 @@ function draw() {
       ctx.lineWidth = 1;
       ctx.strokeRect(e.x, e.y + e.height + 6, e.width, 8);
     } else if (e.type === "strong") {
-      drawStrongPickle(e.x, e.y + wy, e.width, e.height);
+      drawStrongPickle(e.x, e.y + wobbleY, e.width, e.height);
     } else {
-      drawPickle(e.x, e.y + wy, e.width, e.height);
+      drawPickle(e.x, e.y + wobbleY, e.width, e.height);
     }
   });
 
+  // Pickle slice explosions
   explosions.forEach(ex => {
-    drawExplosion(ex.x, ex.y, ex.size, 1 - ex.timer / ex.maxTimer);
+    drawPickleSlices(ex, 1 - ex.timer / ex.maxTimer);
   });
 }
 
