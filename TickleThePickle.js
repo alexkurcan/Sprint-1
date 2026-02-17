@@ -8,9 +8,42 @@ const endScreen = document.getElementById("endScreen");
 const endScore = document.getElementById("endScore");
 const victoryScreen = document.getElementById("victoryScreen");
 const victoryScore = document.getElementById("victoryScore");
+const quitPopup = document.getElementById("quitPopup");
+const upgradePopup = document.getElementById("upgradePopup");
 
 let gameStarted = false;
 let paused = false;
+let quitPending = false;
+let upgradePopupTimer = 0;
+
+// ======================
+// QUIT & UPGRADE POPUP HELPERS
+// ======================
+function showUpgradePopup(msg) {
+  upgradePopup.textContent = msg;
+  upgradePopup.style.display = "block";
+  upgradePopupTimer = 120; // ~2 seconds at 60fps
+}
+
+document.getElementById("quitYes").addEventListener("click", () => {
+  quitPopup.style.display = "none";
+  quitPending = false;
+  gameStarted = false;
+  gameOver = true;
+  paused = false;
+  // Clear canvas and show start screen
+  ctx.fillStyle = "#111";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  endScreen.style.display = "none";
+  victoryScreen.style.display = "none";
+  startScreen.style.display = "flex";
+});
+
+document.getElementById("quitNo").addEventListener("click", () => {
+  quitPopup.style.display = "none";
+  quitPending = false;
+  paused = false;
+});
 
 // ======================
 // SPRITE DRAWING FUNCTIONS
@@ -284,6 +317,15 @@ document.addEventListener("keydown", e => {
   if (e.key.toLowerCase() === "r" && gameOver) {
     resetGame();
   }
+
+  // Q — open quit confirmation (only during active gameplay)
+  if (e.key.toLowerCase() === "q" && gameStarted && !gameOver) {
+    if (!quitPending) {
+      quitPending = true;
+      paused = true;
+      quitPopup.style.display = "flex";
+    }
+  }
 });
 
 document.addEventListener("keyup", e => {
@@ -386,6 +428,10 @@ function resetGame() {
   endScreen.style.display = "none";
   startScreen.style.display = "none";
   victoryScreen.style.display = "none";
+  upgradePopup.style.display = "none";
+  quitPopup.style.display = "none";
+  upgradePopupTimer = 0;
+  quitPending = false;
 
   spawnWave();
 }
@@ -436,11 +482,24 @@ function update() {
   fireCooldown--;
 
   // Upgrade
-  if (keys["p"] && score >= 200 && !upgradedThisWave) {
-    fireRate = Math.max(5, fireRate - 5);
-    score -= 200;
-    upgradedThisWave = true;
+  if (keys["p"]) {
+    if (upgradedThisWave) {
+      showUpgradePopup("Already upgraded this wave!");
+    } else if (score < 200) {
+      showUpgradePopup(`Need 200 pts to upgrade! (${score}/200)`);
+    } else {
+      fireRate = Math.max(5, fireRate - 5);
+      score -= 200;
+      upgradedThisWave = true;
+      showUpgradePopup("🔥 Fire rate upgraded!");
+    }
     keys["p"] = false;
+  }
+
+  // Tick down upgrade popup
+  if (upgradePopupTimer > 0) {
+    upgradePopupTimer--;
+    if (upgradePopupTimer === 0) upgradePopup.style.display = "none";
   }
 
   bullets.forEach(b => (b.y -= 10));
